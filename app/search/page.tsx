@@ -2,7 +2,7 @@
 
 import { FileText, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { TaskRow } from "@/components/TaskRow";
 import { useStore } from "@/components/StoreProvider";
 
@@ -10,7 +10,7 @@ export default function SearchPage() {
   const router = useRouter();
   const { state } = useStore();
   const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
+  const q = useDeferredValue(query).trim().toLowerCase();
 
   const tasks = state.tasks
     .filter((task) => !task.archived)

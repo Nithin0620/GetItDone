@@ -16,7 +16,7 @@ import {
   Target,
   Layers3,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { CommandMenu } from "@/components/CommandMenu";
 import { FocusTimer } from "@/components/FocusTimer";
@@ -59,6 +59,8 @@ export function AppShell({ children, authEnabled }: { children: React.ReactNode;
     quickAddOpen,
     commandOpen,
     toast,
+    notify,
+    updateTask,
     setQuickAddOpen,
     setCommandOpen,
     selectedTaskId,
@@ -68,6 +70,7 @@ export function AppShell({ children, authEnabled }: { children: React.ReactNode;
   const activeTasks = state.tasks.filter((task) => !task.archived);
   const myDayCount = activeTasks.filter((task) => task.myDay && task.status !== "done").length;
   const inboxCount = activeTasks.filter((task) => !task.workspaceId).length;
+  const firedReminders = useRef(new Set<string>());
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -93,22 +96,37 @@ export function AppShell({ children, authEnabled }: { children: React.ReactNode;
   }, [setCommandOpen, setQuickAddOpen, commandOpen, closeTask]);
 
   useEffect(() => {
-    if (!state.settings.notifications || typeof Notification === "undefined") return;
+    if (!hydrated || !state.settings.notifications) return;
     const check = () => {
-      if (Notification.permission !== "granted") return;
       const now = Date.now();
+      const lead = state.settings.reminderLeadMinutes * 60_000;
       activeTasks.forEach((task) => {
-        if (!task.reminderAt || task.status === "done") return;
-        const at = new Date(task.reminderAt).getTime();
-        if (at <= now && now - at < 60000) {
-          new Notification("getitdone reminder", { body: task.title });
+        if (task.status === "done" || task.remindedAt || firedReminders.current.has(task.id)) return;
+        const reminderAt = task.reminderAt ? Date.parse(task.reminderAt) : Number.NaN;
+        const dueAt = task.dueDate ? Date.parse(task.dueDate) : Number.NaN;
+        const at = Number.isNaN(reminderAt) ? dueAt : reminderAt;
+        if (!Number.isFinite(at) || at - lead > now || now - at > 6 * 60 * 60_000) return;
+
+        firedReminders.current.add(task.id);
+        const body = `${task.title}${Number.isNaN(reminderAt) ? " is due" : at <= now ? " — reminder" : " — due soon"}`;
+        notify(body);
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("getitdone", { body, tag: task.id });
         }
+        updateTask(task.id, { remindedAt: new Date().toISOString() });
       });
     };
-    const timer = window.setInterval(check, 30000);
+    const timer = window.setInterval(check, 30_000);
     check();
     return () => window.clearInterval(timer);
-  }, [state.settings.notifications, activeTasks]);
+  }, [
+    activeTasks,
+    hydrated,
+    notify,
+    state.settings.notifications,
+    state.settings.reminderLeadMinutes,
+    updateTask,
+  ]);
 
   if (!hydrated) {
     return <div className="boot">Loading your workspace…</div>;

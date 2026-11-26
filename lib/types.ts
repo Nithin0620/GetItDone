@@ -27,6 +27,7 @@ export interface Task {
   dueDate?: string;
   estimatedMinutes?: number;
   reminderAt?: string;
+  remindedAt?: string;
   tags: string[];
   category?: string;
   checklist: ChecklistItem[];
@@ -122,6 +123,7 @@ export interface Settings {
   notifications: boolean;
   focusMinutes: number;
   breakMinutes: number;
+  reminderLeadMinutes: number;
   calendarSyncEnabled: boolean;
 }
 

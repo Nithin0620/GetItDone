@@ -37,6 +37,7 @@ export async function ensureIndexes(db: Db): Promise<void> {
     db.collection("calendar_integrations").createIndex({ userId: 1 }, { unique: true }),
     db.collection("calendar_oauth_states").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.collection("tasks").createIndex({ userId: 1, calendarEventId: 1 }),
+    db.collection("attachments.files").createIndex({ "metadata.userId": 1, "metadata.taskId": 1 }),
     db.collection("domain_rules").createIndex({ userId: 1, domain: 1 }),
     db.collection("extension_tokens").createIndex({ userId: 1 }),
     db.collection("extension_tokens").createIndex({ tokenHash: 1 }, { unique: true }),

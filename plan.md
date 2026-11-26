@@ -302,7 +302,7 @@ A website cannot see which other tabs are open — browser sandboxing limits it 
 
 ## 15. Roadmap
 
-**Current status:** Phases 0–4 complete; awaiting confirmation for Phase 5.
+**Current status:** Phases 0–5 complete; product is at launch-prep stage.
 
 **Phase 0 — Foundation (complete):** Next.js app, Google auth, MongoDB connection, user model, layout/design system, default workspaces.
 
@@ -314,7 +314,9 @@ A website cannot see which other tabs are open — browser sandboxing limits it 
 
 **Phase 4 — Google Calendar (complete):** OAuth connection, one-way task → event sync, then two-way sync with webhooks, reconciliation, retries, and conflict rules.
 
-**Phase 5 — Polish:** Advanced reminders (email/push), file attachments, exports, performance tuning, OAuth verification, and public launch.
+**Phase 5 — Polish (complete):** Smart browser reminders, MongoDB GridFS attachments, JSON/CSV exports, deferred search, security headers, PWA metadata, health check, robots/sitemap, and launch prep.
+
+**Launch checklist:** Use an HTTPS `AUTH_URL`, add both Google redirect URIs, verify the OAuth consent screen, set `MONGODB_URI` and `AUTH_SECRET`, run lint/typecheck/build, then submit Google OAuth verification if expanding scope beyond testing accounts.
 
 ## 16. Open questions
 

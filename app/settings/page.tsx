@@ -8,6 +8,7 @@ import {
   Chrome,
   Copy,
   Database,
+  Download,
   Moon,
   Plus,
   RefreshCw,
@@ -19,6 +20,7 @@ import {
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
+import { downloadText, tasksCsv } from "@/lib/export";
 
 function normalizeDomain(value: string) {
   return value
@@ -134,6 +136,19 @@ export default function SettingsPage() {
     }
   }
 
+  function exportData(format: "json" | "csv") {
+    if (session?.user) {
+      window.location.href = `/api/export?format=${format}`;
+      return;
+    }
+    const day = new Date().toISOString().slice(0, 10);
+    if (format === "json") {
+      downloadText(`getitdone-${day}.json`, JSON.stringify(state, null, 2), "application/json");
+    } else {
+      downloadText(`getitdone-tasks-${day}.csv`, tasksCsv(state), "text/csv");
+    }
+  }
+
   async function resolveConflict(taskId: string, choice: "local" | "google") {
     await fetch("/api/calendar/resolve", {
       method: "POST",
@@ -223,6 +238,24 @@ export default function SettingsPage() {
             >
               Enable
             </button>
+          </div>
+          <div className="row space-between mt-16">
+            <div>
+              <div className="row small"><Bell size={14} /> Remind before due date</div>
+              <div className="tiny muted" style={{ marginTop: 3 }}>Applies to tasks without a custom reminder.</div>
+            </div>
+            <select
+              className="input"
+              style={{ width: 110 }}
+              value={state.settings.reminderLeadMinutes}
+              onChange={(event) => updateSettings({ reminderLeadMinutes: Number(event.target.value) })}
+            >
+              {[0, 5, 10, 15, 30, 60, 1440].map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {minutes === 0 ? "At due time" : minutes === 1440 ? "1 day before" : `${minutes}m before`}
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 
@@ -471,6 +504,14 @@ export default function SettingsPage() {
             </div>
             <button className="btn btn-sm" onClick={resetDemo}>
               <RotateCcw /> Reset
+            </button>
+          </div>
+          <div className="row" style={{ gap: 8, marginTop: 12 }}>
+            <button className="btn btn-sm" onClick={() => exportData("json")}>
+              <Download /> Export JSON
+            </button>
+            <button className="btn btn-sm" onClick={() => exportData("csv")}>
+              <Download /> Export CSV
             </button>
           </div>
         </section>

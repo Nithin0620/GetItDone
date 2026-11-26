@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notifications: false,
   focusMinutes: 25,
   breakMinutes: 5,
+  reminderLeadMinutes: 0,
   calendarSyncEnabled: false,
 };
 

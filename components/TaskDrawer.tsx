@@ -1,11 +1,20 @@
 "use client";
 
-import { Archive, Bell, Check, Clock3, Plus, RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import { Archive, Bell, Check, Clock3, Download, Paperclip, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
 import { minutesLabel } from "@/lib/analytics";
 import type { Priority, Recurrence, Status } from "@/lib/types";
 import { PRIORITIES, PRIORITY_LABELS, RECURRENCES, STATUSES, STATUS_LABELS } from "@/lib/utils";
+
+interface Attachment {
+  id: string;
+  name: string;
+  size: number;
+  contentType: string;
+  uploadedAt: string;
+}
 
 export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () => void }) {
   const {
@@ -29,6 +38,24 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
   const [linkText, setLinkText] = useState(() => task?.links.join(", ") ?? "");
   const [newItem, setNewItem] = useState("");
   const [newComment, setNewComment] = useState("");
+  const { data: session } = useSession();
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const loadAttachments = useCallback(async () => {
+    if (!session?.user?.id) {
+      setAttachments([]);
+      return;
+    }
+    const response = await fetch(`/api/attachments?taskId=${encodeURIComponent(taskId)}`);
+    if (!response.ok) return;
+    const data = (await response.json()) as { items: Attachment[] };
+    setAttachments(data.items ?? []);
+  }, [taskId, session?.user?.id]);
+
+  useEffect(() => {
+    void loadAttachments();
+  }, [loadAttachments]);
 
   if (!task) return null;
 
@@ -52,7 +79,7 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
 
   async function setReminder(value: string) {
     if (!value) {
-      updateTask(taskId, { reminderAt: undefined });
+      updateTask(taskId, { reminderAt: undefined, remindedAt: undefined });
       return;
     }
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
@@ -62,7 +89,27 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
     } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
       updateSettings({ notifications: true });
     }
-    updateTask(taskId, { reminderAt: new Date(value).toISOString() });
+    updateTask(taskId, { reminderAt: new Date(value).toISOString(), remindedAt: undefined });
+  }
+
+  async function uploadAttachment(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("taskId", taskId);
+      formData.set("file", file);
+      const response = await fetch("/api/attachments", { method: "POST", body: formData });
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        notify(data.error ?? "Upload failed");
+        return;
+      }
+      notify("File attached");
+      await loadAttachments();
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -158,7 +205,12 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
                 type="date"
                 className="input"
                 value={task.dueDate ?? ""}
-                onChange={(event) => updateTask(taskId, { dueDate: event.target.value || undefined })}
+                onChange={(event) =>
+                  updateTask(taskId, {
+                    dueDate: event.target.value || undefined,
+                    remindedAt: undefined,
+                  })
+                }
               />
             </div>
             <div className="field">
@@ -304,6 +356,50 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string; onClose: () =>
               onBlur={commitLinks}
               placeholder="https://…"
             />
+          </div>
+
+          <div className="field">
+            <label className="row" style={{ gap: 6 }}>
+              <Paperclip style={{ width: 13, height: 13 }} /> Attachments
+            </label>
+            {session?.user ? (
+              <>
+                <input
+                  id={`attachment-${taskId}`}
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={(event) => void uploadAttachment(event.target.files?.[0])}
+                />
+                <label htmlFor={`attachment-${taskId}`} className="btn btn-sm" style={{ width: "fit-content" }}>
+                  {uploading ? "Uploading…" : "Attach file"}
+                </label>
+                {attachments.map((file) => (
+                  <div key={file.id} className="row space-between small" style={{ padding: "6px 0" }}>
+                    <span className="truncate row" style={{ gap: 6 }}>
+                      <Paperclip style={{ width: 12, height: 12 }} />
+                      {file.name}
+                    </span>
+                    <div className="row" style={{ gap: 4 }}>
+                      <a className="icon-btn" href={`/api/attachments/${file.id}`} title="Download">
+                        <Download />
+                      </a>
+                      <button
+                        className="icon-btn"
+                        title="Delete attachment"
+                        onClick={async () => {
+                          await fetch(`/api/attachments/${file.id}`, { method: "DELETE" });
+                          await loadAttachments();
+                        }}
+                      >
+                        <Trash2 />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="tiny faint">Sign in to attach files.</div>
+            )}
           </div>
 
           <div>
