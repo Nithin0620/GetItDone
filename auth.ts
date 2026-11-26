@@ -22,29 +22,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/" },
   callbacks: {
     async signIn({ user, account }) {
-      if (!mongoConfigured) return false;
-      const db = await getDb();
-      await ensureIndexes(db);
-      const googleId = account?.providerAccountId ?? user.email ?? "unknown";
-      const existing = await db.collection("users").findOne({ googleId });
-      let userId: string;
-      if (existing) {
-        userId = existing.userId ?? String(existing._id);
-      } else {
-        userId = crypto.randomUUID();
-        await db.collection("users").insertOne({
-          userId,
-          googleId,
-          name: user.name ?? null,
-          email: user.email ?? null,
-          image: user.image ?? null,
-          settings: seedState().settings,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+      if (!mongoConfigured) {
+        console.error("[auth] Sign in rejected: MONGODB_URI is not configured in environment variables.");
+        return false;
       }
-      (user as { id?: string }).id = userId;
-      return true;
+      try {
+        const db = await getDb();
+        await ensureIndexes(db);
+        const googleId = account?.providerAccountId ?? user.email ?? "unknown";
+        const existing = await db.collection("users").findOne({ googleId });
+        let userId: string;
+        if (existing) {
+          userId = existing.userId ?? String(existing._id);
+        } else {
+          userId = crypto.randomUUID();
+          await db.collection("users").insertOne({
+            userId,
+            googleId,
+            name: user.name ?? null,
+            email: user.email ?? null,
+            image: user.image ?? null,
+            settings: seedState().settings,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+        (user as { id?: string }).id = userId;
+        return true;
+      } catch (error) {
+        console.error("[auth] Sign in failed during MongoDB operation:", error);
+        return false;
+      }
     },
     async jwt({ token, user }) {
       if (user?.id) token.userId = user.id;
