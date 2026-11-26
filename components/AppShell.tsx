@@ -7,12 +7,10 @@ import {
   Check,
   Inbox,
   LayoutDashboard,
-  Moon,
   NotebookPen,
   Plus,
   Search,
   Settings,
-  Sun,
   Target,
   Layers3,
 } from "lucide-react";
@@ -22,6 +20,7 @@ import { CommandMenu } from "@/components/CommandMenu";
 import { FocusTimer } from "@/components/FocusTimer";
 import { QuickAdd } from "@/components/QuickAdd";
 import { TaskDrawer } from "@/components/TaskDrawer";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useStore } from "@/components/StoreProvider";
 
 const NAV = [
@@ -176,7 +175,7 @@ export function AppShell({ children, authEnabled }: { children: React.ReactNode;
             ))}
         </nav>
         <div className="sidebar-foot">
-          <ThemeButton />
+          <ThemeToggle className="nav-item" />
         </div>
       </aside>
 
@@ -185,6 +184,7 @@ export function AppShell({ children, authEnabled }: { children: React.ReactNode;
           <div className="topbar-title">{title}</div>
           <div className="topbar-sub">· {subtitle}</div>
           <div className="topbar-spacer" />
+          <ThemeToggle />
           <AuthButton enabled={authEnabled} />
           <button className="btn" onClick={() => setCommandOpen(true)}>
             <Search />
@@ -208,21 +208,6 @@ export function AppShell({ children, authEnabled }: { children: React.ReactNode;
       <FocusTimer />
       {toast && <div className="toast"><Check size={14} /> {toast}</div>}
     </div>
-  );
-}
-
-function ThemeButton() {
-  const { state, updateSettings } = useStore();
-  const dark = state.settings.theme === "dark";
-  return (
-    <button
-      className="nav-item"
-      onClick={() => updateSettings({ theme: dark ? "light" : "dark" })}
-      title={dark ? "Switch to light" : "Switch to dark"}
-    >
-      {dark ? <Sun /> : <Moon />}
-      <span>{dark ? "Light mode" : "Dark mode"}</span>
-    </button>
   );
 }
 

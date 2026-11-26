@@ -30,6 +30,24 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const saved = localStorage.getItem("getitdone:theme");
+                if (saved === "dark" || saved === "light") {
+                  document.documentElement.dataset.theme = saved;
+                } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                  document.documentElement.dataset.theme = "dark";
+                } else {
+                  document.documentElement.dataset.theme = "light";
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
       <body>
         <SessionProvider>
           <StoreProvider>

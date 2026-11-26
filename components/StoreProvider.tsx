@@ -133,8 +133,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [state, hydrated, remoteReady, userId, notify]);
 
   useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("getitdone:theme");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.dataset.theme = saved;
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) return;
     document.documentElement.dataset.theme = state.settings.theme;
+    try {
+      window.localStorage.setItem("getitdone:theme", state.settings.theme);
+    } catch {}
   }, [state.settings.theme, hydrated]);
 
   const setQuickAddOpen = useCallback((open: boolean, workspaceId?: ID | null) => {
