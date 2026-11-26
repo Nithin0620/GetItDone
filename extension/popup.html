@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>getitdone tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="mark">g</span>
+        <strong>getitdone</strong>
+      </div>
+      <span id="status" class="pill">Loading</span>
+    </header>
+
+    <section id="setup">
+      <h1>Connect your dashboard</h1>
+      <p class="muted">Generate a sync token in Settings → Time tracking, then paste it here.</p>
+      <label for="apiUrl">Dashboard URL</label>
+      <input id="apiUrl" type="url" spellcheck="false" value="http://localhost:3000" />
+      <label for="token">Sync token</label>
+      <input id="token" type="password" spellcheck="false" placeholder="Paste token from getitdone" />
+      <button id="connect" class="primary">Connect</button>
+      <p id="setupError" class="error"></p>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="row">
+        <div>
+          <span class="label">Today</span>
+          <strong id="todayTotal" class="big">0m</strong>
+        </div>
+        <button id="toggle" class="secondary">Pause</button>
+      </div>
+
+      <div class="card current">
+        <span class="label">Current tab</span>
+        <strong id="currentDomain">—</strong>
+        <span id="currentTitle" class="muted">No active page</span>
+      </div>
+
+      <span class="label">Top sites today</span>
+      <div id="topSites" class="sites"></div>
+
+      <p id="syncStatus" class="muted">Waiting to sync</p>
+      <button id="openDashboard" class="secondary">Open dashboard</button>
+      <button id="disconnect" class="link">Disconnect</button>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

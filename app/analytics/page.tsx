@@ -1,7 +1,9 @@
 "use client";
 
-import { BarChart3, CheckCircle2, Clock3, Flame, Target } from "lucide-react";
+import { BarChart3, CheckCircle2, Clock3, Flame, Globe2, Target } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
 import {
   bestDay,
@@ -17,7 +19,21 @@ import { isOverdue, progress } from "@/lib/utils";
 
 export default function AnalyticsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { state } = useStore();
+  const [webTime, setWebTime] = useState<{ domain: string; day: string; seconds: number }[]>([]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    void (async () => {
+      const response = await fetch("/api/web-time");
+      if (!response.ok) return;
+      const data = (await response.json()) as {
+        items: { domain: string; day: string; seconds: number }[];
+      };
+      setWebTime(data.items ?? []);
+    })();
+  }, [session?.user?.id]);
   const activeTasks = state.tasks.filter((task) => !task.archived);
   const endedSessions = state.focusSessions.filter((session) => session.endedAt);
   const days = lastDays(7);
@@ -38,6 +54,19 @@ export default function AnalyticsPage() {
     });
   const focusTotals = focusByWorkspace(endedSessions);
   const maxFocusWorkspace = Math.max(...focusTotals.map((item) => item.seconds), 1);
+
+  const domainTotals = new Map<string, number>();
+  webTime.forEach((item) => {
+    domainTotals.set(item.domain, (domainTotals.get(item.domain) ?? 0) + item.seconds);
+  });
+  const topDomains = [...domainTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const maxDomain = Math.max(...topDomains.map((item) => item[1]), 1);
+  const dailyWeb = days.map((day) =>
+    webTime
+      .filter((item) => item.day === day.key)
+      .reduce((total, item) => total + item.seconds, 0),
+  );
+  const webTotal = [...domainTotals.values()].reduce((total, value) => total + value, 0);
 
   const actualByTask = new Map<string, number>();
   endedSessions.forEach((session) => {
@@ -100,6 +129,58 @@ export default function AnalyticsPage() {
             <span className="tiny muted">minutes per day</span>
           </div>
           <BarChart values={focus.map((value) => Math.round(value / 60))} labels={days.map((day) => day.label)} max={Math.ceil(maxFocus / 60)} />
+        </section>
+      </div>
+
+      <div className="grid grid-2 mt-16">
+        <section className="card card-pad">
+          <div className="row space-between">
+            <h2 className="strong small" style={{ margin: 0 }}>Web time by site</h2>
+            <span className="tiny muted">{minutesLabel(webTotal)} total</span>
+          </div>
+          {topDomains.length === 0 ? (
+            <div className="empty small" style={{ marginTop: 12 }}>
+              Connect the Chrome extension in Settings to see website time here.
+            </div>
+          ) : (
+            <div className="mt-16">
+              {topDomains.map(([domain, seconds]) => {
+                const rule = state.domainRules.find((entry) => entry.domain === domain);
+                return (
+                  <div key={domain} style={{ marginBottom: 12 }}>
+                    <div className="row space-between tiny">
+                      <span className="truncate">{domain}</span>
+                      <span className="muted">
+                        {minutesLabel(seconds)}
+                        {rule?.budgetMinutesPerDay
+                          ? ` / ${rule.budgetMinutesPerDay}m`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="progress-track mt-8">
+                      <div
+                        className="progress-fill"
+                        style={{ width: `${Math.round((seconds / maxDomain) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+        <section className="card card-pad">
+          <div className="row space-between">
+            <h2 className="strong small row" style={{ margin: 0 }}>
+              <Globe2 size={14} /> Web time trend
+            </h2>
+            <span className="tiny muted">minutes per day</span>
+          </div>
+          <BarChart
+            values={dailyWeb.map((value) => Math.round(value / 60))}
+            labels={days.map((day) => day.label)}
+            max={Math.ceil(Math.max(...dailyWeb, 1) / 60)}
+          />
         </section>
       </div>
 

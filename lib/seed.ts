@@ -1,4 +1,4 @@
-import type { AppState, FocusSession, Goal, Settings, Task, Workspace } from "./types";
+import type { AppState, DomainRule, FocusSession, Goal, Settings, Task, Workspace } from "./types";
 import { shiftDate, todayKey, uid } from "./utils";
 
 const TODAY = todayKey();
@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notifications: false,
   focusMinutes: 25,
   breakMinutes: 5,
+  calendarSyncEnabled: false,
 };
 
 export function emptyState(): AppState {
@@ -54,6 +55,7 @@ export function emptyState(): AppState {
     tags: [],
     focusSessions: [],
     goals: [],
+    domainRules: [],
     settings: DEFAULT_SETTINGS,
   };
 }
@@ -62,11 +64,15 @@ export function normalizeState(value: Partial<AppState> | null | undefined): App
   return {
     version: 1,
     workspaces: value?.workspaces ?? [],
-    tasks: value?.tasks ?? [],
+    tasks: (value?.tasks ?? []).map((task) => ({
+      ...task,
+      calendarSyncState: task.calendarSyncState ?? "local",
+    })),
     notes: value?.notes ?? [],
     tags: value?.tags ?? [],
     focusSessions: value?.focusSessions ?? [],
     goals: value?.goals ?? [],
+    domainRules: value?.domainRules ?? [],
     settings: { ...DEFAULT_SETTINGS, ...value?.settings },
   };
 }
@@ -193,12 +199,19 @@ export function seedState(): AppState {
     },
   ];
 
+  const domainRules: DomainRule[] = [
+    { id: uid("rule"), domain: "leetcode.com", workspaceId: dsa.id, category: "DP", budgetMinutesPerDay: 90, blockedDuringFocus: false },
+    { id: uid("rule"), domain: "github.com", workspaceId: projects.id, blockedDuringFocus: false },
+    { id: uid("rule"), domain: "youtube.com", workspaceId: personal.id, budgetMinutesPerDay: 60, blockedDuringFocus: true },
+  ];
+
   return {
     version: 1,
     workspaces,
     tasks,
     focusSessions,
     goals,
+    domainRules,
     tags: [
       { id: uid("tag"), name: "dp", color: "#3b82f6" },
       { id: uid("tag"), name: "arrays", color: "#0ea5e9" },

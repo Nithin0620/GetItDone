@@ -3,6 +3,7 @@ import { ensureIndexes, getDb } from "@/lib/mongodb";
 import { normalizeState, seedState } from "@/lib/seed";
 import type {
   AppState,
+  DomainRule,
   FocusSession,
   Goal,
   Note,
@@ -54,17 +55,19 @@ export async function GET() {
       db.collection("tags").insertMany(owned(seed.tags, userId)),
       db.collection("focus_sessions").insertMany(owned(seed.focusSessions, userId)),
       db.collection("goals").insertMany(owned(seed.goals, userId)),
+      db.collection("domain_rules").insertMany(owned(seed.domainRules, userId)),
     ]);
     userDoc = await db.collection("users").findOne({ userId });
   }
 
-  const [workspaces, tasks, notes, tags, focusSessions, goals] = await Promise.all([
+  const [workspaces, tasks, notes, tags, focusSessions, goals, domainRules] = await Promise.all([
     db.collection("workspaces").find({ userId }).sort({ order: 1 }).toArray(),
     db.collection("tasks").find({ userId }).sort({ order: 1 }).toArray(),
     db.collection("notes").find({ userId }).toArray(),
     db.collection("tags").find({ userId }).toArray(),
     db.collection("focus_sessions").find({ userId }).toArray(),
     db.collection("goals").find({ userId }).toArray(),
+    db.collection("domain_rules").find({ userId }).toArray(),
   ]);
 
   const state: AppState = normalizeState({
@@ -75,6 +78,7 @@ export async function GET() {
     tags: tags.map((doc) => clean<Tag>(doc)),
     focusSessions: focusSessions.map((doc) => clean<FocusSession>(doc)),
     goals: goals.map((doc) => clean<Goal>(doc)),
+    domainRules: domainRules.map((doc) => clean<DomainRule>(doc)),
     settings: (userDoc?.settings as Settings | undefined) ?? seedState().settings,
   });
 
@@ -107,6 +111,7 @@ export async function PUT(request: Request) {
     replace("tags", owned(state.tags, userId)),
     replace("focus_sessions", owned(state.focusSessions, userId)),
     replace("goals", owned(state.goals, userId)),
+    replace("domain_rules", owned(state.domainRules, userId)),
     db.collection("users").updateOne(
       { userId },
       { $set: { settings: state.settings, updatedAt: new Date() } },

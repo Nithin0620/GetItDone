@@ -34,5 +34,21 @@ export async function ensureIndexes(db: Db): Promise<void> {
     db.collection("goals").createIndex({ userId: 1 }),
     db.collection("calendar_integrations").createIndex({ userId: 1, provider: 1 }, { unique: true }),
     db.collection("calendar_sync_logs").createIndex({ userId: 1, timestamp: -1 }),
+    db.collection("calendar_integrations").createIndex({ userId: 1 }, { unique: true }),
+    db.collection("calendar_oauth_states").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    db.collection("tasks").createIndex({ userId: 1, calendarEventId: 1 }),
+    db.collection("domain_rules").createIndex({ userId: 1, domain: 1 }),
+    db.collection("extension_tokens").createIndex({ userId: 1 }),
+    db.collection("extension_tokens").createIndex({ tokenHash: 1 }, { unique: true }),
   ]);
+
+  try {
+    await db.createCollection("page_time_events", {
+      timeseries: { timeField: "startTime", metaField: "userId", granularity: "minutes" },
+    });
+  } catch (error) {
+    if ((error as { code?: number }).code !== 48) throw error;
+  }
+  await db.collection("page_time_events").createIndex({ userId: 1, startTime: -1 });
+  await db.collection("page_time_events").createIndex({ domain: 1 });
 }

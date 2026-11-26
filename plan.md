@@ -302,21 +302,23 @@ A website cannot see which other tabs are open — browser sandboxing limits it 
 
 ## 15. Roadmap
 
-**Phase 0 — Foundation:** Next.js app, Google auth, MongoDB connection, user model, layout/design system, default workspaces.
+**Current status:** Phases 0–4 complete; awaiting confirmation for Phase 5.
 
-**Phase 1 — Core product:** Workspaces, full task model, subtasks/tags/priorities/status/recurrence, List/Board/Calendar views, My Day, Inbox, quick capture, global search, archive, notes, reminders.
+**Phase 0 — Foundation (complete):** Next.js app, Google auth, MongoDB connection, user model, layout/design system, default workspaces.
 
-**Phase 2 — Time and insight:** Pomodoro with task association, goals/milestones, productivity analytics, streaks, dashboard polish.
+**Phase 1 — Core product (complete):** Workspaces, full task model, subtasks/tags/priorities/status/recurrence, List/Board/Calendar views, My Day, Inbox, quick capture, global search, archive, notes, reminders.
 
-**Phase 3 — Chrome extension:** Active-tab time tracking, domain mapping rules, popup, sync to backend, browser-time analytics and optional focus blocking. *(Move earlier if tracking is a must-have for v1.)*
+**Phase 2 — Time and insight (complete):** Pomodoro with task association, goals/milestones, productivity analytics, streaks, dashboard polish.
 
-**Phase 4 — Google Calendar:** OAuth connection, one-way task → event sync, then two-way sync with webhooks, reconciliation, retries, and conflict rules.
+**Phase 3 — Chrome extension (complete):** Active-tab time tracking, domain mapping rules, popup, sync to backend, browser-time analytics and optional focus blocking.
+
+**Phase 4 — Google Calendar (complete):** OAuth connection, one-way task → event sync, then two-way sync with webhooks, reconciliation, retries, and conflict rules.
 
 **Phase 5 — Polish:** Advanced reminders (email/push), file attachments, exports, performance tuning, OAuth verification, and public launch.
 
 ## 16. Open questions
 
-- Should the Chrome tracker ship in v1 or stay in Phase 3?
+- Chrome tracker shipped in Phase 3.
 - Visual direction: dark or light first; minimal and calm or colorful and energetic; any reference app to imitate?
 - Deployment: personal cloud host vs managed platform; custom domain?
 - Do you want reminders by email/push, or in-app/browser notifications only initially?

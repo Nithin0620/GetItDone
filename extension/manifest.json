@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "getitdone — web time tracker",
+  "short_name": "getitdone tracker",
+  "version": "0.1.0",
+  "description": "Tracks time spent on each website and syncs it to your getitdone dashboard.",
+  "permissions": ["tabs", "idle", "storage", "alarms", "declarativeNetRequest"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "service-worker.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "getitdone web time tracker"
+  }
+}

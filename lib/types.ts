@@ -37,6 +37,10 @@ export interface Task {
   archived: boolean;
   myDay: boolean;
   dayBlock?: string;
+  calendarEventId?: string;
+  calendarSyncState?: "local" | "synced" | "conflict";
+  calendarUpdatedAt?: string;
+  calendarSyncError?: string;
   order: number;
   createdAt: string;
   updatedAt: string;
@@ -104,11 +108,21 @@ export interface Goal {
   updatedAt: string;
 }
 
+export interface DomainRule {
+  id: ID;
+  domain: string;
+  workspaceId: ID | null;
+  category?: string;
+  budgetMinutesPerDay?: number;
+  blockedDuringFocus: boolean;
+}
+
 export interface Settings {
   theme: Theme;
   notifications: boolean;
   focusMinutes: number;
   breakMinutes: number;
+  calendarSyncEnabled: boolean;
 }
 
 export interface AppState {
@@ -119,6 +133,7 @@ export interface AppState {
   tags: Tag[];
   focusSessions: FocusSession[];
   goals: Goal[];
+  domainRules: DomainRule[];
   settings: Settings;
 }
 

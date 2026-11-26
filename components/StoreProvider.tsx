@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { emptyState, normalizeState, seedState } from "@/lib/seed";
 import type {
   AppState,
+  DomainRule,
   FocusSession,
   Goal,
   ID,
@@ -53,6 +54,9 @@ interface StoreValue {
   addGoal: (input: Partial<Goal> & { title: string }) => Goal;
   updateGoal: (id: ID, patch: Partial<Goal>) => void;
   deleteGoal: (id: ID) => void;
+  addDomainRule: (input: Partial<DomainRule> & { domain: string }) => DomainRule;
+  updateDomainRule: (id: ID, patch: Partial<DomainRule>) => void;
+  deleteDomainRule: (id: ID) => void;
   resetDemo: () => void;
 }
 
@@ -155,6 +159,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       myDay: false,
       order: Date.now(),
       ...rest,
+      calendarSyncState: "local",
       id: uid("task"),
       title,
       createdAt: now,
@@ -170,7 +175,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       tasks: current.tasks.map((task) => {
         if (task.id !== id) return task;
         const now = new Date().toISOString();
-        const next: Task = { ...task, ...patch, updatedAt: now };
+        const calendarFields: (keyof Task)[] = ["title", "description", "dueDate", "startDate", "status"];
+        const dirty = calendarFields.some((field) => field in patch);
+        const next: Task = {
+          ...task,
+          ...patch,
+          updatedAt: now,
+          ...(dirty && !("calendarSyncState" in patch) ? { calendarSyncState: "local" as const } : {}),
+        };
         if (patch.status === "done" && task.status !== "done") next.completedAt = now;
         if (patch.status && patch.status !== "done") next.completedAt = undefined;
         return next;
@@ -191,6 +203,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               status: completing ? ("done" as const) : ("todo" as const),
               completedAt: completing ? now : undefined,
               updatedAt: now,
+              calendarSyncState: "local" as const,
             }
           : task,
       );
@@ -208,6 +221,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               completedAt: undefined,
               myDay: false,
               dayBlock: undefined,
+              calendarEventId: undefined,
+              calendarSyncState: "local" as const,
               createdAt: now,
               updatedAt: now,
               checklist: source.checklist.map((item) => ({ ...item, done: false })),
@@ -408,6 +423,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState((current) => ({ ...current, goals: current.goals.filter((goal) => goal.id !== id) }));
   }, []);
 
+  const addDomainRule = useCallback((input: Partial<DomainRule> & { domain: string }): DomainRule => {
+    const { domain, ...rest } = input;
+    const created: DomainRule = {
+      workspaceId: null,
+      blockedDuringFocus: false,
+      ...rest,
+      id: uid("rule"),
+      domain,
+    };
+    setState((current) => ({ ...current, domainRules: [...current.domainRules, created] }));
+    return created;
+  }, []);
+
+  const updateDomainRule = useCallback((id: ID, patch: Partial<DomainRule>) => {
+    setState((current) => ({
+      ...current,
+      domainRules: current.domainRules.map((rule) =>
+        rule.id === id ? { ...rule, ...patch } : rule,
+      ),
+    }));
+  }, []);
+
+  const deleteDomainRule = useCallback((id: ID) => {
+    setState((current) => ({
+      ...current,
+      domainRules: current.domainRules.filter((rule) => rule.id !== id),
+    }));
+  }, []);
+
   const resetDemo = useCallback(() => {
     setState(seedState());
     setSelectedTaskId(null);
@@ -449,6 +493,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addGoal,
       updateGoal,
       deleteGoal,
+      addDomainRule,
+      updateDomainRule,
+      deleteDomainRule,
       resetDemo,
     }),
     [
@@ -482,6 +529,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addGoal,
       updateGoal,
       deleteGoal,
+      addDomainRule,
+      updateDomainRule,
+      deleteDomainRule,
       resetDemo,
     ],
   );
