@@ -19,35 +19,106 @@
       <h1>Connect your dashboard</h1>
       <p class="muted">Generate a sync token in Settings → Time tracking, then paste it here.</p>
       <label for="apiUrl">Dashboard URL</label>
-      <input id="apiUrl" type="url" spellcheck="false" value="http://localhost:3000" />
+      <input id="apiUrl" type="url" spellcheck="false" value="https://getitdone.ssh.net.in" />
       <label for="token">Sync token</label>
       <input id="token" type="password" spellcheck="false" placeholder="Paste token from getitdone" />
       <button id="connect" class="primary">Connect</button>
       <p id="setupError" class="error"></p>
     </section>
 
-    <section id="dashboard" hidden>
-      <div class="row">
-        <div>
-          <span class="label">Today</span>
-          <strong id="todayTotal" class="big">0m</strong>
-        </div>
-        <button id="toggle" class="secondary">Pause</button>
-      </div>
+    <div id="views" hidden>
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-view="dashboard">Dashboard</button>
+        <button class="nav-tab" data-view="focus">Focus</button>
+        <button class="nav-tab" data-view="settings">Limits</button>
+      </nav>
 
-      <div class="card current">
-        <span class="label">Current tab</span>
-        <strong id="currentDomain">—</strong>
-        <span id="currentTitle" class="muted">No active page</span>
-      </div>
+      <main id="content">
+        <section id="view-dashboard">
+          <div class="stat-grid">
+            <div class="stat"><span class="label">Today</span><strong id="todayTotal">0m 00s</strong></div>
+            <div class="stat"><span class="label">Sites visited</span><strong id="sitesVisited">0</strong></div>
+            <div class="stat"><span class="label">Active tabs</span><strong id="activeTabs">0</strong></div>
+          </div>
 
-      <span class="label">Top sites today</span>
-      <div id="topSites" class="sites"></div>
+          <div class="card current-card">
+            <div class="card-heading"><span class="label">Current tab</span><span id="currentLive" class="live">0m 00s</span></div>
+            <div class="current-site">
+              <img id="currentFavicon" class="favicon" alt="" />
+              <div class="current-info">
+                <strong id="currentDomain">—</strong>
+                <span id="currentTitle" class="muted">No active page</span>
+              </div>
+            </div>
+            <div class="current-footer">Today on this site <strong id="currentToday">0m 00s</strong></div>
+          </div>
 
-      <p id="syncStatus" class="muted">Waiting to sync</p>
-      <button id="openDashboard" class="secondary">Open dashboard</button>
-      <button id="disconnect" class="link">Disconnect</button>
-    </section>
+          <p id="syncStatus" class="muted">Waiting to sync</p>
+          <div class="actions">
+            <button id="toggleDashboard" class="secondary">Pause</button>
+            <button id="openDashboard" class="secondary">Dashboard</button>
+          </div>
+          <button id="disconnect" class="link">Disconnect</button>
+        </section>
+
+        <section id="view-focus" hidden>
+          <div class="focus-heading">
+            <strong id="focusTotal">0m 00s</strong>
+            <span class="label">tracked today · <span id="limitCount">0</span> limits set</span>
+          </div>
+          <div class="card-heading focus-title"><h2>Top 10 most used websites</h2><span class="label">Today</span></div>
+          <div id="topSites" class="sites"></div>
+        </section>
+
+        <section id="view-settings" hidden>
+          <div class="card">
+            <div class="toggle-row">
+              <div>
+                <strong>Enable tracking</strong>
+                <p class="muted">Track time on every open tab across all windows.</p>
+              </div>
+              <label class="switch">
+                <input id="toggleTracking" type="checkbox" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Set Website Time Limit</h2>
+            <label for="limitDomain">Select a website</label>
+            <div class="select-wrap">
+              <select id="limitDomain"></select>
+            </div>
+            <p class="help">Choose the website you want to limit time on</p>
+            <label for="limitMinutes">Enter time in minutes</label>
+            <input id="limitMinutes" type="number" min="1" placeholder="Enter time in minutes" />
+            <p class="help">Set the maximum time you want to spend on this website</p>
+            <div class="toggle-row strict-row">
+              <div>
+                <strong>Strict Enforcement</strong>
+                <p class="help">Closes the website when you reach the limit.</p>
+              </div>
+              <label class="switch">
+                <input id="strictMode" type="checkbox" />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <button id="setLimit" class="primary">Set time limit</button>
+            <p id="limitError" class="error"></p>
+          </div>
+
+          <div class="card-heading"><h2>Current limits</h2></div>
+          <div id="currentLimits" class="limits"></div>
+
+          <div class="card-heading"><h2>Reset data</h2></div>
+          <div class="actions">
+            <button id="resetSession" class="secondary">Reset session</button>
+            <button id="resetToday" class="secondary">Reset today</button>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <script src="popup.js"></script>
   </body>

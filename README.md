@@ -805,6 +805,7 @@ service-worker.js
 popup.html
 popup.js
 styles.css
+icons/
 ```
 
 Permissions:
@@ -814,6 +815,7 @@ tabs
 idle
 storage
 alarms
+notifications
 declarativeNetRequest
 <all_urls>
 ```
@@ -825,7 +827,7 @@ declarativeNetRequest
 3. Click Load unpacked.
 4. Select `/home/nithin/Projects/getitdone/extension`.
 5. Open the extension popup.
-6. Set Dashboard URL to `http://localhost:3000`.
+6. Set Dashboard URL to `https://getitdone.ssh.net.in` (prefilled by default).
 7. Paste a sync token from Settings → Time tracking extension.
 8. Click Connect.
 
@@ -833,17 +835,14 @@ declarativeNetRequest
 
 The service worker:
 
-- Tracks the active tab in the focused window.
-- Records hostname only, not full URLs or query strings.
-- Strips `www.` from domains.
-- Ignores `chrome://`, `about:` and extension pages.
-- Closes the current interval on tab change, window blur, tab close, idle or lock.
-- Buffers events locally.
-- Flushes events every minute.
-- Loads remote config every minute.
+- Tracks the active tab in **every** browser window, refreshing on tab activation, creation, URL/title change, removal, and window focus/creation/removal events.
+- Ticks once per second while the worker is alive, with a one-minute `chrome.alarms` fallback and a ten-second tab resync heartbeat.
+- Uses per-interval timestamps so tab switches, service-worker restarts and idle periods cannot double-count or inflate time.
+- Records hostname only (with `www.` stripped), not full URLs or query strings. `chrome://`, `about:` and extension pages are tracked by their scheme and page name.
+- Pauses accumulation when the browser is idle or locked and resumes when active again.
+- Keeps daily and current-session totals in `chrome.storage.local` and aggregates pending time into one sync event per site.
+- Flushes events and loads remote config every minute.
 - Applies focus-time blocking rules when a focus session is running.
-
-Events shorter than five seconds are discarded.
 
 ### Sync token flow
 
@@ -856,15 +855,20 @@ Events shorter than five seconds are discarded.
 
 ### Popup
 
-The popup shows:
+The popup is 480×600 with three views:
 
-- Connection state.
-- Tracking state.
-- Time spent today.
-- Current tab.
-- Top sites today.
-- Pending event count or sync error.
-- Open dashboard and Disconnect actions.
+- **Dashboard**: live current-tab timer, today total, sites visited, active tabs, sync state, pause/resume, dashboard and disconnect actions.
+- **Focus**: top 10 most used websites for today with rank, favicon, duration, share percentage and progress bars.
+- **Limits**: tracking toggle, "Set Website Time Limit" form (site picker, minutes, strict enforcement), active limits with remove buttons, and session/today reset.
+
+### Website time limits
+
+Limits are stored locally in the extension:
+
+- Pick any tracked website and set a limit in minutes.
+- When the daily total reaches the limit, a Chrome notification is shown once per day.
+- **Strict Enforcement** closes every open tab for that site and removes the limit after enforcement.
+- Removing a limit clears its strict flag and notification state.
 
 ### Focus blocking
 

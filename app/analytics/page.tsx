@@ -2,6 +2,7 @@
 
 import { BarChart3, CheckCircle2, Clock3, Flame, Globe2, Target } from "lucide-react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useStore } from "@/components/StoreProvider";
@@ -59,8 +60,14 @@ export default function AnalyticsPage() {
   webTime.forEach((item) => {
     domainTotals.set(item.domain, (domainTotals.get(item.domain) ?? 0) + item.seconds);
   });
-  const topDomains = [...domainTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
-  const maxDomain = Math.max(...topDomains.map((item) => item[1]), 1);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayTotals = new Map<string, number>();
+  webTime.forEach((item) => {
+    if (item.day !== todayKey) return;
+    todayTotals.set(item.domain, (todayTotals.get(item.domain) ?? 0) + item.seconds);
+  });
+  const topToday = [...todayTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const todayWebTotal = [...todayTotals.values()].reduce((total, value) => total + value, 0);
   const dailyWeb = days.map((day) =>
     webTime
       .filter((item) => item.day === day.key)
@@ -135,37 +142,66 @@ export default function AnalyticsPage() {
       <div className="grid grid-2 mt-16">
         <section className="card card-pad">
           <div className="row space-between">
-            <h2 className="strong small" style={{ margin: 0 }}>Web time by site</h2>
-            <span className="tiny muted">{minutesLabel(webTotal)} total</span>
+            <h2 className="strong small" style={{ margin: 0 }}>Top 10 most used websites</h2>
+            <span className="tiny muted">{siteDuration(todayWebTotal)} today</span>
           </div>
-          {topDomains.length === 0 ? (
+          {topToday.length === 0 ? (
             <div className="empty small" style={{ marginTop: 12 }}>
               Connect the Chrome extension in Settings to see website time here.
             </div>
           ) : (
             <div className="mt-16">
-              {topDomains.map(([domain, seconds]) => {
+              {topToday.map(([domain, seconds], index) => {
+                const percent = todayWebTotal ? Math.round((seconds / todayWebTotal) * 100) : 0;
                 const rule = state.domainRules.find((entry) => entry.domain === domain);
                 return (
-                  <div key={domain} style={{ marginBottom: 12 }}>
-                    <div className="row space-between tiny">
-                      <span className="truncate">{domain}</span>
-                      <span className="muted">
-                        {minutesLabel(seconds)}
-                        {rule?.budgetMinutesPerDay
-                          ? ` / ${rule.budgetMinutesPerDay}m`
-                          : ""}
+                  <div key={domain} style={{ marginBottom: 11 }}>
+                    <div className="row tiny" style={{ gap: 8 }}>
+                      <span className="muted" style={{ width: 16, flex: "none", textAlign: "right" }}>
+                        {index + 1}
+                      </span>
+                      <span
+                        style={{
+                          width: 14,
+                          height: 14,
+                          flex: "none",
+                          display: "grid",
+                          placeItems: "center",
+                        }}
+                      >
+                        {domain.includes("://") ? (
+                          <Globe2 size={14} className="muted" />
+                        ) : (
+                          <Image
+                            src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`}
+                            alt=""
+                            width={14}
+                            height={14}
+                            unoptimized
+                            onError={(event) => {
+                              event.currentTarget.style.visibility = "hidden";
+                            }}
+                          />
+                        )}
+                      </span>
+                      <span className="truncate grow">{domain}</span>
+                      {rule?.budgetMinutesPerDay ? (
+                        <span className="tiny faint">/{rule.budgetMinutesPerDay}m</span>
+                      ) : null}
+                      <span className="muted" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        {siteDuration(seconds)}
+                      </span>
+                      <span className="faint" style={{ width: 30, flex: "none", textAlign: "right" }}>
+                        {percent}%
                       </span>
                     </div>
                     <div className="progress-track mt-8">
-                      <div
-                        className="progress-fill"
-                        style={{ width: `${Math.round((seconds / maxDomain) * 100)}%` }}
-                      />
+                      <div className="progress-fill" style={{ width: `${percent}%` }} />
                     </div>
                   </div>
                 );
               })}
+              <div className="tiny muted mt-16">Last 7 days: {minutesLabel(webTotal)}</div>
             </div>
           )}
         </section>
@@ -295,6 +331,14 @@ export default function AnalyticsPage() {
       </div>
     </>
   );
+}
+
+function siteDuration(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(total / 60);
+  const hours = Math.floor(minutes / 60);
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  return `${minutes}m ${String(total % 60).padStart(2, "0")}s`;
 }
 
 function BarChart({ values, labels, max }: { values: number[]; labels: string[]; max: number }) {
